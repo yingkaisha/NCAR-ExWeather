@@ -1,5 +1,6 @@
 *.png
 *.log
+*.out
 *.err
 x_*
 # Byte-compiled / optimized / DLL files
