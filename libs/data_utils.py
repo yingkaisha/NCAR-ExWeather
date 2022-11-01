@@ -15,6 +15,15 @@ from scipy.interpolate import NearestNDInterpolator
 # from sklearn.metrics import mean_squared_error
 # from sklearn.metrics import mean_absolute_error
 
+def shuffle_ind(L):
+    '''
+    shuffle indices
+    L: length of dimension
+    '''
+    ind = np.arange(L)
+    np.random.shuffle(ind)
+    return ind
+
 def is_leap_year(year):
     '''
     Determine whether a year is a leap year.

@@ -23,7 +23,7 @@ base_ref = datetime(2010, 1, 1)
 
 ref_v3 = (base_v3_e - base_ref).days
 
-var_inds = [1, 46, 64, 76, 88, 106, 181]
+var_inds = var_inds = [46, 52, 58, 64, 70, 76, 82, 88, 94, 100, 106, 112, 118, 124, 130, 136, 142, 148, 154, 160, 181] #[1, 46, 64, 76, 88, 106, 181]
 filenames = sorted(glob(data_pdhrrr_dir+'*.par')) #[:20]
 
 N_var = len(var_inds)
