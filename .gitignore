@@ -2,6 +2,10 @@
 *.log
 *.out
 *.err
+old/*
+qsub/*.log
+qsub/*.out
+qsbu/*.err
 x_*
 # Byte-compiled / optimized / DLL files
 __pycache__/
