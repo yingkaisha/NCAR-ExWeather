@@ -3,7 +3,7 @@
 *.out
 *.err
 old/*
-qsub/*.log
+qsub/*
 qsub/*.out
 qsbu/*.err
 x_*
