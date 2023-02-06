@@ -1,0 +1,13 @@
+
+1. Download grib files
+2. Subtrack variables from grib files and compress them as .zarr
+3. Compute mean and std on each location and forcast lead times
+4. Perform data normalization, and generate training / validation batches
+5. Train CNNs to produce feature vectors
+6. Fine tnue CNN with alternate training
+7. Check the integrety of forecast lead times; for each location and initialization time, if all of its forecat lead times have good quality, it will be preserved.
+8. Predict feature vectors on training / validation batches
+9. Train classification heads based on feature vectors
+10. Testing set prediction and inference
+
+
