@@ -90,7 +90,7 @@ for i in range(L):
         print('grib2 var table mismatch: {}'.format(date_temp))
         VARs[i, ...] = np.nan
 
-save_name = save_dir_scratch+'HRRR_{}_{}.zarr'.format(lead, prefix)
+save_name = save_dir_campaign+'HRRR_{}_{}.zarr'.format(lead, prefix)
 print('Save to {}'.format(save_name))
 zarr.save(save_name, VARs)
         

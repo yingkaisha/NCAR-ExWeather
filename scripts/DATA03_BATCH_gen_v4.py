@@ -52,7 +52,7 @@ sparse = [True, False, True, True, True, True, True, True, True, False, False,
           False, False, False, True, True, True, False, False, False, False, False, False]
 
 #HRRRv4_lead = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(lead))
-HRRRv4_lead = da.from_zarr(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(lead))
+HRRRv4_lead = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(lead))
 
 lead_window, flag_shift = neighbour_leads(lead)
 
@@ -146,7 +146,7 @@ L_vars_per = len(ind_pick)
 
 out_slice = np.empty((1, input_size, input_size, L_vars))
 
-batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4'
+batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/'
 prefix = '{}v4_day{:03d}_{}_{}_{}_indx{}_indy{}_lead{}.npy'
 
 flag_torn = 'neg'
@@ -163,8 +163,10 @@ max_stats = np.load('/glade/work/ksha/NCAR/p90_allv4_80km_full_lead{}{}{}.npy'.f
 
 #L_train
 for day in range(L_train):
-
-    tv_label = 'TEST'
+    if day <= 28:
+        tv_label = 'VALID'
+    else:
+        tv_label = 'TEST'
         
     for ix in range(shape_80km[0]):
         for iy in range(shape_80km[1]):

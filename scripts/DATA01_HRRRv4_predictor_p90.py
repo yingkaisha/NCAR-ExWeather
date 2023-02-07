@@ -48,9 +48,9 @@ log_norm = [True, False, True, True, True, True, True, True, True, False, False,
 # HRRRv4_lead_p1 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
 # HRRRv4_lead_p2 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
 
-HRRRv4_lead_p0 = da.from_zarr(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
-HRRRv4_lead_p1 = da.from_zarr(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
-HRRRv4_lead_p2 = da.from_zarr(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
+HRRRv4_lead_p0 = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
+HRRRv4_lead_p1 = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
+HRRRv4_lead_p2 = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
 
 indx_array = np.empty(shape_80km)
 indy_array = np.empty(shape_80km)
@@ -130,8 +130,8 @@ for ix in range(shape_80km[0]):
                             stats_var[v, 3] = np.max(temp)
                             
                     # print("--- %s seconds ---" % (time.time() - start_time))
-                    save_name = '/glade/work/ksha/NCAR/p90_v4_80km_ix{}_iy{}_lead{}{}{}.npy'.format(ix, iy, 
-                                                                                                      leads[0], leads[1], leads[2])
+                    save_name = '/glade/work/ksha/NCAR/p90_v4_80km_ix{}_iy{}_lead{}{}{}.npy'.format(ix, iy,
+                                                                                                    leads[0], leads[1], leads[2])
                     np.save(save_name, stats_var)
                     print(save_name)
                     

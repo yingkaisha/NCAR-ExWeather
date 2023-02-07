@@ -44,9 +44,9 @@ ind_pick = [0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
 log_norm = [True, False, True, True, True, True, True, True, True, False, False, 
             False, False, True, True, True, True, False, False, False, False, False, False]
 
-HRRRv4_lead_p0 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
-HRRRv4_lead_p1 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
-HRRRv4_lead_p2 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
+HRRRv4_lead_p0 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
+HRRRv4_lead_p1 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
+HRRRv4_lead_p2 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
 
 indx_array = np.empty(shape_80km)
 indy_array = np.empty(shape_80km)
