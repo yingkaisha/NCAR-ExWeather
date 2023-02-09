@@ -89,8 +89,12 @@ for i in range(4):
         for ix in range(shape_record[1]):
             for iy in range(shape_record[2]):
                 for event in range(shape_record[3]):
-                    if np.logical_not(np.isnan(record_temp[day, ix, iy, event])):
-                        record_v4[day, ix, iy, event] = record_temp[day, ix, iy, event]
+                    if record_temp[day, ix, iy, event] > 0:
+                        record_v4[day, ix, iy, event] = 1.0
+                    elif record_v4[day, ix, iy, event] == 1.0:
+                        record_v4[day, ix, iy, event] = 1.0
+                    else:
+                        record_v4[day, ix, iy, event] = 0.0
         
 
 with h5py.File(save_dir+'HRRR_domain.hdf', 'r') as h5io:
@@ -134,8 +138,8 @@ base_v4_e = datetime(2022, 7, 15)
 base_ref = datetime(2010, 1, 1)
 
 date_list_v3 = [base_v3_s + timedelta(days=day) for day in range(365+365+142)]
-date_list_v4 = [base_v4_s + timedelta(days=day) for day in range(365+365+30)]
-
+date_list_v4 = [base_v4_s + timedelta(days=day) for day in range(365+180-151)]
+# up to 2021 12 31
 L_train = shape_record[0]
 
 input_size = 64
@@ -162,7 +166,7 @@ norm_stats = np.load('/glade/work/ksha/NCAR/stats_allv4_80km_full_lead{}{}{}.npy
 max_stats = np.load('/glade/work/ksha/NCAR/p90_allv4_80km_full_lead{}{}{}.npy'.format(leads[0], leads[1], leads[2]))
 
 #L_train
-for day in range(L_train):
+for day in range(0, L_train, 1):
     if day <= 28:
         tv_label = 'VALID'
     else:
