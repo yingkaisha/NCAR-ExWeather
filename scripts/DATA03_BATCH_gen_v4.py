@@ -52,7 +52,7 @@ sparse = [True, False, True, True, True, True, True, True, True, False, False,
           False, False, False, True, True, True, False, False, False, False, False, False]
 
 #HRRRv4_lead = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(lead))
-HRRRv4_lead = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(lead))
+HRRRv4_lead = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(lead))
 
 lead_window, flag_shift = neighbour_leads(lead)
 
@@ -150,7 +150,7 @@ L_vars_per = len(ind_pick)
 
 out_slice = np.empty((1, input_size, input_size, L_vars))
 
-batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/'
+batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
 prefix = '{}v4_day{:03d}_{}_{}_{}_indx{}_indy{}_lead{}.npy'
 
 flag_torn = 'neg'
