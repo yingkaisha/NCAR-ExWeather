@@ -32,8 +32,8 @@ from namelist import *
 import data_utils as du
 
 # ==================== #
-weights_round = 5
-save_round = 6
+weights_round = 6
+save_round = 7
 seeds = 777
 # ==================== #
 
@@ -81,7 +81,7 @@ class LayerScale(layers.Layer):
 def create_model(input_shape=(64, 64, 15)):
 
     depths=[3, 3, 27, 3]
-    projection_dims=[32, 64, 96, 128]
+    projection_dims=[32, 32, 64, 64]
     drop_path_rate=0.0
     layer_scale_init_value=1e-6
 
@@ -169,14 +169,6 @@ def create_model(input_shape=(64, 64, 15)):
     V1 = X
 
     OUT = layers.GlobalMaxPooling2D(name="{}_head_pool64".format(model_name))(V1)
-#     OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_head_norm64".format(model_name))(OUT)
-
-#     OUT = layers.Dense(64, name="{}_dense1".format(model_name))(OUT)
-#     OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_dense1_norm".format(model_name))(OUT)
-#     OUT = layers.Activation("gelu", name="{}_dense1_gelu{}".format(model_name, j))(OUT)
-
-#     OUT = layers.Dense(1, name="{}_head_out".format(model_name))(OUT)
-
     model = Model(inputs=IN64, outputs=OUT, name=model_name)
     
     return model
@@ -184,7 +176,7 @@ def create_model(input_shape=(64, 64, 15)):
 def create_model_head():
 
     
-    IN_vec = keras.Input((128,))    
+    IN_vec = keras.Input((64,))    
     X = IN_vec
     #
     X = keras.layers.Dense(64)(X)
@@ -338,7 +330,7 @@ OUT = model_head(VEC)
 
 model_final = Model(inputs=IN, outputs=OUT)
 
-W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/RE2_peak_base{}/'.format(weights_round))
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/RE2_small_base{}/'.format(weights_round))
 model_final.compile(loss=keras.losses.BinaryCrossentropy(from_logits=False), optimizer=keras.optimizers.Adam(lr=1e-4))
 model_final.set_weights(W_old)
 
@@ -361,7 +353,7 @@ Y_batch[...] = np.nan
 temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
 
 # =========== Model Section ========== #
-key = 'RE2_peak_{}{}'.format(flag_train, save_round)
+key = 'RE2_small_{}{}'.format(flag_train, save_round)
 model_name = '{}'.format(key)
 model_path = temp_dir+model_name
 
