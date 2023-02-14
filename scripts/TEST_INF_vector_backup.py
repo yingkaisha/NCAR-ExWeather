@@ -105,15 +105,16 @@ with h5py.File(save_dir+'HRRR_domain.hdf', 'r') as h5io:
     land_mask_72km = h5io['land_mask_80km'][...]
     land_mask_3km = h5io['land_mask_3km'][...]
 
-ind_pick_from_batch = [0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
+ind_pick_from_batch = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+#[0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
 L_vars = len(ind_pick_from_batch)
 
-filename_neg_valid = sorted(glob("/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/*neg_neg_neg*lead{}.npy".format(lead)))
-filename_pos_valid = sorted(glob("/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/*pos*lead{}.npy".format(lead)))
+filename_neg_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/VALID*neg_neg_neg*lead{}.npy".format(lead)))
+filename_pos_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/VALID*pos*lead{}.npy".format(lead)))
 
 filename_valid = filename_neg_valid + filename_pos_valid
 
-#filename_valid = filename_valid[:200]
+#filename_valid = filename_valid[:100]
 
 L_valid = len(filename_valid)
 L_var = L_vars
@@ -246,7 +247,7 @@ model = create_model(input_shape=(64, 64, 15))
 batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
 temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
 
-W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/LIGHT5_Lead6_tune5')
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/FIX15_Lead6_tune2')
 model.set_weights(W_old)
 
 model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
@@ -259,7 +260,7 @@ save_dict = {}
 save_dict['y_true'] = TEST_target
 save_dict['y_pred'] = Y_pred
 save_dict['y_vector'] = Y_vector
-save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_v4_vec2.npy".format(lead)
+save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_vec3.npy".format(lead)
 print(save_name)
 np.save(save_name, save_dict)
 

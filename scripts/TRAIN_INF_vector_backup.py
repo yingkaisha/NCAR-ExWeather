@@ -1,3 +1,4 @@
+
 # general tools
 import sys
 from glob import glob
@@ -5,18 +6,12 @@ from glob import glob
 # data tools
 import time
 import h5py
-import random
 import numpy as np
-from random import shuffle
 
 # deep learning tools
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import utils
-from tensorflow.keras import Model
 from tensorflow.keras import layers
-from tensorflow.keras import backend
-
 tf.config.run_functions_eagerly(True)
 
 from keras_unet_collection import utils as k_utils
@@ -27,19 +22,69 @@ sys.path.insert(0, '/glade/u/home/ksha/NCAR/libs/')
 from namelist import *
 import data_utils as du
 
-from sklearn.metrics import classification_report, auc, roc_curve
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import brier_score_loss
-from sklearn.metrics import log_loss
-
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument('part', help='part')
 parser.add_argument('lead', help='lead')
 args = vars(parser.parse_args())
 
+# =============== #
+part = int(args['part'])
 lead = int(args['lead'])
 
+    
+with h5py.File(save_dir+'HRRR_domain.hdf', 'r') as h5io:
+    lon_3km = h5io['lon_3km'][...]
+    lat_3km = h5io['lat_3km'][...]
+    lon_72km = h5io['lon_72km'][...]
+    lat_72km = h5io['lat_72km'][...]
+    land_mask_72km = h5io['land_mask_72km'][...]
+    land_mask_3km = h5io['land_mask_3km'][...]
+
+gap = 200000
+
+ind_pick_from_batch = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+L_vars = len(ind_pick_from_batch)
+
+filename_neg_train = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/TRAIN*neg_neg_neg*lead{}.npy".format(lead)))
+filename_pos_train = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/TRAIN*pos*lead{}.npy".format(lead)))
+filename_valid = filename_pos_train + filename_neg_train
+
+if part == 0:
+    filename_valid = filename_valid[:gap]
+elif part == 1:
+    filename_valid = filename_valid[gap:2*gap]
+else:
+    filename_valid = filename_valid[2*gap:]
+
+L_valid = len(filename_valid)
+L_var = L_vars
+
+TEST_input_64 = np.empty((L_valid, 64, 64, L_var))
+#TEST_input_32 = np.empty((L_valid, 32, 32, L_var))
+TEST_target = np.ones(L_valid)
+
+for i, name in enumerate(filename_valid):
+    data = np.load(name)
+    for k, c in enumerate(ind_pick_from_batch):
+        
+        TEST_input_64[i, ..., k] = data[..., c]
+        #TEST_input_32[i, ..., k] = data[:, 16:-16, 16:-16, c]
+
+        if 'pos' in name:
+            TEST_target[i] = 1.0
+        else:
+            TEST_target[i] = 0.0
+        
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import backend
+from tensorflow.keras import layers
+from tensorflow.keras import utils
+from tensorflow.keras import Model
+
+  
 class LayerScale(layers.Layer):
     """Layer scale module.
     References:
@@ -96,42 +141,6 @@ def Head(num_classes=1000, name=None):
 
     return apply
 
-
-with h5py.File(save_dir+'HRRR_domain.hdf', 'r') as h5io:
-    lon_3km = h5io['lon_3km'][...]
-    lat_3km = h5io['lat_3km'][...]
-    lon_72km = h5io['lon_80km'][...]
-    lat_72km = h5io['lat_80km'][...]
-    land_mask_72km = h5io['land_mask_80km'][...]
-    land_mask_3km = h5io['land_mask_3km'][...]
-
-ind_pick_from_batch = [0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
-L_vars = len(ind_pick_from_batch)
-
-filename_neg_valid = sorted(glob("/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/*neg_neg_neg*lead{}.npy".format(lead)))
-filename_pos_valid = sorted(glob("/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/*pos*lead{}.npy".format(lead)))
-
-filename_valid = filename_neg_valid + filename_pos_valid
-
-#filename_valid = filename_valid[:200]
-
-L_valid = len(filename_valid)
-L_var = L_vars
-
-TEST_input_64 = np.empty((L_valid, 64, 64, L_var))
-TEST_target = np.ones(L_valid)
-
-for i, name in enumerate(filename_valid):
-    data = np.load(name)
-    for k, c in enumerate(ind_pick_from_batch):
-        
-        TEST_input_64[i, ..., k] = data[..., c]
-
-        if 'pos' in name:
-            TEST_target[i] = 1.0
-        else:
-            TEST_target[i] = 0.0
-
 def create_model(input_shape=(64, 64, 15)):
 
     depths=[3, 3, 27, 3]
@@ -144,6 +153,13 @@ def create_model(input_shape=(64, 64, 15)):
     IN64 = layers.Input(shape=input_shape)
     X = IN64
 
+    # X = layers.LocallyConnected2D(64, kernel_size=1, strides=(1, 1), padding="valid", implementation=1)(X)
+    # X = layers.LayerNormalization(epsilon=1e-6, name="{}_lc1_norm".format(model_name))(X)
+    # X = layers.Activation("gelu", name="{}_lc1_gelu".format(model_name))(X)
+
+    # X = layers.LocallyConnected2D(96, kernel_size=1, strides=(1, 1), padding="valid", implementation=1)(X)
+    # X = layers.LayerNormalization(epsilon=1e-6, name="{}_lc2_norm".format(model_name))(X)
+    # X = layers.Activation("gelu", name="{}_lc2_gelu".format(model_name))(X)
 
     # ----- convnext block 0 ----- #
 
@@ -246,7 +262,7 @@ model = create_model(input_shape=(64, 64, 15))
 batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
 temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
 
-W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/LIGHT5_Lead6_tune5')
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/FIX15_Lead6_tune2')
 model.set_weights(W_old)
 
 model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
@@ -259,7 +275,8 @@ save_dict = {}
 save_dict['y_true'] = TEST_target
 save_dict['y_pred'] = Y_pred
 save_dict['y_vector'] = Y_vector
-save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_v4_vec2.npy".format(lead)
+save_name = "/glade/work/ksha/NCAR/TRAIN_pp15_pred_lead{}_part{}_vec3.npy".format(lead, part)
 print(save_name)
 np.save(save_name, save_dict)
+
 

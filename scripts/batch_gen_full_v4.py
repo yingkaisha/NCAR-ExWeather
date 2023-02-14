@@ -201,7 +201,7 @@ L_vars_per = len(ind_pick)
 
 out_slice = np.empty((1, input_size, input_size, L_vars))
 
-batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch_v4/'
+batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4/'
 prefix = '{}v4_day{:03d}_{}_{}_{}_indx{}_indy{}_lead{}.npy'
 
 flag_torn = 'neg'

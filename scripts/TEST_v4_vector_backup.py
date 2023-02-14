@@ -246,7 +246,7 @@ model = create_model(input_shape=(64, 64, 15))
 batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
 temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
 
-W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/LIGHT5_Lead6_tune5')
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/FIX15_Lead6_tune2')
 model.set_weights(W_old)
 
 model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
@@ -259,7 +259,7 @@ save_dict = {}
 save_dict['y_true'] = TEST_target
 save_dict['y_pred'] = Y_pred
 save_dict['y_vector'] = Y_vector
-save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_v4_vec2.npy".format(lead)
+save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_v4_vec3.npy".format(lead)
 print(save_name)
 np.save(save_name, save_dict)
 

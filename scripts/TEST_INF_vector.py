@@ -108,10 +108,12 @@ with h5py.File(save_dir+'HRRR_domain.hdf', 'r') as h5io:
 ind_pick_from_batch = [0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
 L_vars = len(ind_pick_from_batch)
 
-filename_neg_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/VALID*neg_neg_neg*lead{}.npy".format(lead)))
-filename_pos_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch/VALID*pos*lead{}.npy".format(lead)))
+filename_neg_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch_v4/*neg_neg_neg*lead{}.npy".format(lead)))
+filename_pos_valid = sorted(glob("/glade/scratch/ksha/DATA/NCAR_batch_v4/*pos*lead{}.npy".format(lead)))
 
 filename_valid = filename_neg_valid + filename_pos_valid
+
+#filename_valid = filename_valid[:200]
 
 L_valid = len(filename_valid)
 L_var = L_vars
@@ -130,139 +132,124 @@ for i, name in enumerate(filename_valid):
         else:
             TEST_target[i] = 0.0
 
-depths=[3, 3, 27, 3]
-projection_dims=[96, 192, 384, 768]
-drop_path_rate=0.0
-layer_scale_init_value=1e-6
+def create_model(input_shape=(64, 64, 15)):
+
+    depths=[3, 3, 27, 3]
+    projection_dims=[32, 64, 96, 128]
+    drop_path_rate=0.0
+    layer_scale_init_value=1e-6
 
 
-model_name='Branch64X'
-input_shape=(64, 64, 15)
-IN64 = layers.Input(shape=input_shape)
-X = IN64
-
-X = layers.LocallyConnected2D(64, kernel_size=1, strides=(1, 1), padding="valid", implementation=1)(X)
-X = layers.LayerNormalization(epsilon=1e-6, name="{}_lc1_norm".format(model_name))(X)
-X = layers.Activation("gelu", name="{}_lc1_gelu".format(model_name))(X)
-
-# X = layers.LocallyConnected2D(96, kernel_size=1, strides=(1, 1), padding="valid", implementation=1)(X)
-# X = layers.LayerNormalization(epsilon=1e-6, name="{}_lc2_norm".format(model_name))(X)
-# X = layers.Activation("gelu", name="{}_lc2_gelu".format(model_name))(X)
-
-# ----- convnext block 0 ----- #
-
-X = layers.Conv2D(projection_dims[0], kernel_size=4, strides=4, name="{}_down0".format(model_name))(X)
-X = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_norm".format(model_name))(X)
-
-for j in range(depths[0]):
-    
-    X_convnext = X
-    X_convnext = layers.Conv2D(filters=projection_dims[0], kernel_size=7, padding="same",
-                               groups=projection_dims[0], name="{}_down0_dconv{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_dconv{}_norm".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(4 * projection_dims[0], name="{}_down0_dense{}_p1".format(model_name, j))(X_convnext)
-    X_convnext = layers.Activation("gelu", name="{}_down0_gelu{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(projection_dims[0], name="{}_down0_dense{}_p2".format(model_name, j))(X_convnext)
-
-    X_convnext = LayerScale(layer_scale_init_value, projection_dims[0], name="{}_down0_layerscale{}".format(model_name, j))(X_convnext)
-
-    X = X + X_convnext
+    model_name='Branch64X'
+    IN64 = layers.Input(shape=input_shape)
+    X = IN64
 
 
-# ----- convnext block 1 ----- #
+    # ----- convnext block 0 ----- #
 
-X = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_norm".format(model_name))(X)
-X = layers.Conv2D(projection_dims[1], kernel_size=2, strides=2, name="{}_down1".format(model_name))(X)
+    X = layers.Conv2D(projection_dims[0], kernel_size=4, strides=4, name="{}_down0".format(model_name))(X)
+    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_norm".format(model_name))(X)
 
-for j in range(depths[1]):
-    
-    X_convnext = X
-    X_convnext = layers.Conv2D(filters=projection_dims[1], kernel_size=7, padding="same",
-                               groups=projection_dims[1], name="{}_down1_dconv{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_dconv{}_norm".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(4 * projection_dims[1], name="{}_down1_dense{}_p1".format(model_name, j))(X_convnext)
-    X_convnext = layers.Activation("gelu", name="{}_down1_gelu{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(projection_dims[1], name="{}_down1_dense{}_p2".format(model_name, j))(X_convnext)
+    for j in range(depths[0]):
 
-    X_convnext = LayerScale(layer_scale_init_value, projection_dims[1], name="{}_down1_layerscale{}".format(model_name, j))(X_convnext)
+        X_convnext = X
+        X_convnext = layers.Conv2D(filters=projection_dims[0], kernel_size=7, padding="same",
+                                   groups=projection_dims[0], name="{}_down0_dconv{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_dconv{}_norm".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(4 * projection_dims[0], name="{}_down0_dense{}_p1".format(model_name, j))(X_convnext)
+        X_convnext = layers.Activation("gelu", name="{}_down0_gelu{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(projection_dims[0], name="{}_down0_dense{}_p2".format(model_name, j))(X_convnext)
 
-    X = X + X_convnext
+        X_convnext = LayerScale(layer_scale_init_value, projection_dims[0], name="{}_down0_layerscale{}".format(model_name, j))(X_convnext)
 
-# ----- convnext block 2 ----- #
-
-X = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_norm".format(model_name))(X)
-X = layers.Conv2D(projection_dims[2], kernel_size=2, strides=2, name="{}_down2".format(model_name))(X)
-
-for j in range(depths[2]):
-    
-    X_convnext = X
-    X_convnext = layers.Conv2D(filters=projection_dims[2], kernel_size=5, padding="same",
-                               groups=projection_dims[2], name="{}_down2_dconv{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_dconv{}_norm".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(4 * projection_dims[2], name="{}_down2_dense{}_p1".format(model_name, j))(X_convnext)
-    X_convnext = layers.Activation("gelu", name="{}_down2_gelu{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(projection_dims[2], name="{}_down2_dense{}_p2".format(model_name, j))(X_convnext)
-
-    X_convnext = LayerScale(layer_scale_init_value, projection_dims[2], name="{}_down2_layerscale{}".format(model_name, j))(X_convnext)
-
-    X = X + X_convnext
-
-# ----- convnext block 3 ----- #
-
-X = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_norm".format(model_name))(X)
-X = layers.Conv2D(projection_dims[3], kernel_size=2, padding='same', name="{}_down3".format(model_name))(X)
-
-for j in range(depths[3]):
-    
-    X_convnext = X
-    X_convnext = layers.Conv2D(filters=projection_dims[3], kernel_size=5, padding="same",
-                               groups=projection_dims[3], name="{}_down3_dconv{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_dconv{}_norm".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(4 * projection_dims[3], name="{}_down3_dense{}_p1".format(model_name, j))(X_convnext)
-    X_convnext = layers.Activation("gelu", name="{}_down3_gelu{}".format(model_name, j))(X_convnext)
-    X_convnext = layers.Dense(projection_dims[3], name="{}_down3_dense{}_p2".format(model_name, j))(X_convnext)
-
-    X_convnext = LayerScale(layer_scale_init_value, projection_dims[3], name="{}_down3_layerscale{}".format(model_name, j))(X_convnext)
-
-    X = X + X_convnext
-
-V1 = X
-
-OUT1 = layers.GlobalMaxPooling2D(name="{}_head_pool64".format(model_name))(V1)
-
-OUT = OUT1
-
-OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_head_norm64".format(model_name))(OUT)
-
-OUT = layers.Dense(256, name="{}_dense1".format(model_name))(OUT)
-OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_dense1_norm".format(model_name))(OUT)
-OUT = layers.Activation("gelu", name="{}_dense1_gelu{}".format(model_name, j))(OUT)
-
-OUT = layers.Dense(1, name="{}_head_out".format(model_name))(OUT)
-
-model = Model(inputs=IN64, outputs=[OUT1, OUT], name=model_name)
+        X = X + X_convnext
 
 
-tol = 0
-min_del = 0
-max_tol = 500 # early stopping with patience
+    # ----- convnext block 1 ----- #
 
-epochs = 500
-L_train = 64
-batch_size = 100
+    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_norm".format(model_name))(X)
+    X = layers.Conv2D(projection_dims[1], kernel_size=2, strides=2, name="{}_down1".format(model_name))(X)
 
-batch_size_half = 50
+    for j in range(depths[1]):
 
-valid_size = 1
+        X_convnext = X
+        X_convnext = layers.Conv2D(filters=projection_dims[1], kernel_size=7, padding="same",
+                                   groups=projection_dims[1], name="{}_down1_dconv{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_dconv{}_norm".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(4 * projection_dims[1], name="{}_down1_dense{}_p1".format(model_name, j))(X_convnext)
+        X_convnext = layers.Activation("gelu", name="{}_down1_gelu{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(projection_dims[1], name="{}_down1_dense{}_p2".format(model_name, j))(X_convnext)
+
+        X_convnext = LayerScale(layer_scale_init_value, projection_dims[1], name="{}_down1_layerscale{}".format(model_name, j))(X_convnext)
+
+        X = X + X_convnext
+
+    # ----- convnext block 2 ----- #
+
+    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_norm".format(model_name))(X)
+    X = layers.Conv2D(projection_dims[2], kernel_size=2, strides=2, name="{}_down2".format(model_name))(X)
+
+    for j in range(depths[2]):
+
+        X_convnext = X
+        X_convnext = layers.Conv2D(filters=projection_dims[2], kernel_size=5, padding="same",
+                                   groups=projection_dims[2], name="{}_down2_dconv{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_dconv{}_norm".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(4 * projection_dims[2], name="{}_down2_dense{}_p1".format(model_name, j))(X_convnext)
+        X_convnext = layers.Activation("gelu", name="{}_down2_gelu{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(projection_dims[2], name="{}_down2_dense{}_p2".format(model_name, j))(X_convnext)
+
+        X_convnext = LayerScale(layer_scale_init_value, projection_dims[2], name="{}_down2_layerscale{}".format(model_name, j))(X_convnext)
+
+        X = X + X_convnext
+
+    # ----- convnext block 3 ----- #
+
+    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_norm".format(model_name))(X)
+    X = layers.Conv2D(projection_dims[3], kernel_size=2, padding='same', name="{}_down3".format(model_name))(X)
+
+    for j in range(depths[3]):
+
+        X_convnext = X
+        X_convnext = layers.Conv2D(filters=projection_dims[3], kernel_size=5, padding="same",
+                                   groups=projection_dims[3], name="{}_down3_dconv{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_dconv{}_norm".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(4 * projection_dims[3], name="{}_down3_dense{}_p1".format(model_name, j))(X_convnext)
+        X_convnext = layers.Activation("gelu", name="{}_down3_gelu{}".format(model_name, j))(X_convnext)
+        X_convnext = layers.Dense(projection_dims[3], name="{}_down3_dense{}_p2".format(model_name, j))(X_convnext)
+
+        X_convnext = LayerScale(layer_scale_init_value, projection_dims[3], name="{}_down3_layerscale{}".format(model_name, j))(X_convnext)
+
+        X = X + X_convnext
+
+    V1 = X
+
+    OUT1 = layers.GlobalMaxPooling2D(name="{}_head_pool64".format(model_name))(V1)
+
+    OUT = OUT1
+
+    OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_head_norm64".format(model_name))(OUT)
+
+    OUT = layers.Dense(256, name="{}_dense1".format(model_name))(OUT)
+    OUT = layers.LayerNormalization(epsilon=1e-6, name="{}_dense1_norm".format(model_name))(OUT)
+    OUT = layers.Activation("gelu", name="{}_dense1_gelu{}".format(model_name, j))(OUT)
+
+    OUT = layers.Dense(1, name="{}_head_out".format(model_name))(OUT)
+
+    model = Model(inputs=IN64, outputs=[OUT1, OUT], name=model_name)
+
+    return model
+
+
+model = create_model(input_shape=(64, 64, 15))
 
 batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
 temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
 
-W_old = k_utils.dummy_loader(temp_dir+'SK15_Lead2_pp12_tune2')
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/F15_Lead6_tune2')
 model.set_weights(W_old)
 
 model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
-
 
 Y_pred_list = model.predict([TEST_input_64,])
 Y_vector = Y_pred_list[0]
@@ -272,7 +259,7 @@ save_dict = {}
 save_dict['y_true'] = TEST_target
 save_dict['y_pred'] = Y_pred
 save_dict['y_vector'] = Y_vector
-save_name = "/glade/work/ksha/NCAR/TEST_pred_lead{}_vec2.npy".format(lead)
+save_name = "/glade/work/ksha/NCAR/TEST_pp15_pred_lead{}_v4_vec4.npy".format(lead)
 print(save_name)
 np.save(save_name, save_dict)
 
