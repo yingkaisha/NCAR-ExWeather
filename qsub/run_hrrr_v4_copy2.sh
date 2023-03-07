@@ -5,12 +5,12 @@
 #PBS -l walltime=23:59:59
 #PBS -l select=1:ncpus=4:ngpus=1:mem=12GB
 #PBS -q casper
-#PBS -o hrrr_v4_05.log
-#PBS -e hrrr_v4_05.err
+#PBS -o hrrr_v4_copy2.log
+#PBS -e hrrr_v4_copy2.err
 
 which python
 
 cd /glade/u/home/ksha/NCAR/scripts/
 
-python HRRRv4_subset.py 05
+python HRRRv4_subset.py 08
 

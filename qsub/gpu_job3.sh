@@ -1,13 +1,13 @@
 #!/bin/bash -l
 
-#PBS -N train2
+#PBS -N vec3
 #PBS -A NAML0001
 #PBS -l walltime=23:59:59
 #PBS -l select=1:ncpus=4:ngpus=1:mem=12GB
 #PBS -l gpu_type=v100
 #PBS -q casper
-#PBS -o train2.out
-#PBS -e train2.err
+#PBS -o vec3.out
+#PBS -e vec3.err
 
 module load cuda/11.0.3
 module load cudnn/8.0.4.30
@@ -16,7 +16,16 @@ module load cudnn/8.0.4.30
 #export PATH="/glade/work/${USER}/py_env_20200417/bin:$PATH"
 
 cd /glade/u/home/ksha/NCAR/scripts/
-python TRAIN_INF_vector.py 2 1
-python TRAIN_INF_vector.py 2 3
-python TRAIN_INF_vector.py 2 4
 
+# python CNN00_feature_vector_training_set.py 0 5 RE2_peak_base5 peak v3
+# python CNN00_feature_vector_training_set.py 1 5 RE2_peak_base5 peak v3
+# python CNN00_feature_vector_training_set.py 2 5 RE2_peak_base5 peak v3
+# python CNN00_feature_vector_validation_set.py 5 RE2_peak_base5 peak v3
+
+python CNN00_feature_vector_training_32.py 0 5 RE2_vgg_base2 vgg v3
+python CNN00_feature_vector_training_32.py 1 5 RE2_vgg_base2 vgg v3
+python CNN00_feature_vector_training_32.py 2 5 RE2_vgg_base2 vgg v3
+python CNN00_feature_vector_validation_32.py 5 RE2_vgg_base2 vgg v3
+
+# python CNN00_feature_vector_training_set.py 0 5 RE2_peak_base5 peak v4x
+# python CNN00_feature_vector_validation_set.py 5 RE2_peak_base5 peak v4x

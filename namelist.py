@@ -4,10 +4,12 @@ import numpy as np
 data_dir = '/glade/work/ksha/NCAR/'
 report_dir = data_dir+'storm_report/'
 NCAR500_dir = '/glade/p/mmm/parc/sobash/NSC/3KM_WRF_POST_12sec_ts/'
+#'/glade/work/sobash/NSC_objects/HRRR_new' 
+#'/glade/u/home/sobash/2013RT/REPORTS/reports_v20221101.db'
 HRRR_dir = '/glade/scratch/ksha/DRIVE/HRRR/'
 save_dir = '/glade/work/ksha/NCAR/'
 save_dir_scratch = '/glade/scratch/ksha/DRIVE/'
-
+save_dir_campaign = '/glade/campaign/cisl/aiml/ksha/'
 
 data_pd500_dir = '/glade/scratch/ksha/DRIVE/clean_NCAR/'
 data_pdhrrr_dir = '/glade/scratch/ksha/DRIVE/clean_HRRR/'
@@ -18,10 +20,9 @@ fig_dir = '/glade/u/home/ksha/figures/'
 # Matplotlib figure export settings
 fig_keys = {'dpi':250, 
             'orientation':'portrait', 
-            'papertype':'a4',
             'bbox_inches':'tight', 
             'pad_inches':0.1, 
-            'transparent':False}
+            'transparent':False}#            'papertype':'a4',
 
 # colors
 #

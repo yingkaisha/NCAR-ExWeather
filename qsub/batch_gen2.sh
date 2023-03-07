@@ -1,17 +1,17 @@
 #!/bin/bash -l
 
-#PBS -N stats
+#PBS -N batch_g2
 #PBS -A NAML0001
 #PBS -l walltime=23:59:59
-#PBS -l select=1:ncpus=4:ngpus=1:mem=12GB
+#PBS -l select=1:ncpus=4:mem=32GB
 #PBS -q casper
-#PBS -o batch_aug.log
-#PBS -e batch_aug.err
+#PBS -o batch_gen2.log
+#PBS -e batch_gen2.err
 
 which python
 
 cd /glade/u/home/ksha/NCAR/scripts/
 
-python batch_gen_full.py 4
-python batch_gen_full.py 5
-python batch_gen_full.py 6
+python DATA03_BATCH_gen_v3.py 3
+# python DATA03_BATCH_gen_v3.py 10
+# python DATA03_BATCH_gen_v4.py 3

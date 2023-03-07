@@ -52,7 +52,7 @@ sparse = [True, False, True, True, True, True, True, True, True, False, False,
           False, False, False, True, True, True, False, False, False, False, False, False]
 
 print('Loading HRRR ...')
-HRRRv3_lead = zarr.load(save_dir_scratch+'HRRR_{:02}_v3.zarr'.format(lead))
+HRRRv3_lead = zarr.load(save_dir_campaign+'HRRR_{:02}_v3.zarr'.format(lead))
 #HRRRv3_lead = da.from_zarr(save_dir_scratch+'HRRR_{:02}_v3.zarr'.format(lead))
 print('... done')
 
@@ -160,7 +160,6 @@ L_vars_per = len(ind_pick)
 
 out_slice = np.empty((1, input_size, input_size, L_vars))
 
-#batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch/'
 batch_dir = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
 prefix = '{}_day{:03d}_{}_{}_{}_indx{}_indy{}_lead{}.npy'
 
