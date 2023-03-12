@@ -90,5 +90,6 @@ save_dict['TRAIN_MEAN'] = TRAIN_MEAN
 save_dict['TEST_MAX'] = TEST_MAX
 save_dict['TEST_MEAN'] = TEST_MEAN
 
+# Save
 np.save('/glade/work/ksha/NCAR/TRAIN_MINMAX_lead{}.npy'.format(lead), save_dict)
 print('/glade/work/ksha/NCAR/TRAIN_MINMAX_lead{}.npy'.format(lead))
