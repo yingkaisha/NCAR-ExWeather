@@ -21,6 +21,7 @@ sys.path.insert(0, '/glade/u/home/ksha/NCAR/libs/')
 
 from namelist import *
 import data_utils as du
+import model_utils as mu
 
 import argparse
 
@@ -46,192 +47,6 @@ lead_name = args['lead_name']
 model_tag = args['model_tag']
 
 L_vec = 8
-
-# ================================================== #
-# Functions
-
-def set_seeds(seed):
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    random.seed(seed)
-    tf.random.set_seed(seed)
-    np.random.seed(seed)
-    
-def verif_metric(VALID_target, Y_pred, ref):
-    BS = np.mean((VALID_target.ravel() - Y_pred.ravel())**2)
-    metric = BS
-
-    return metric / ref
-
-def feature_extract(filenames, lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max):
-    
-    lon_out = []
-    lat_out = []
-    elev_out = []
-    mon_out = []
-    
-    base_v3_s = datetime(2018, 7, 15)
-    base_v3_e = datetime(2020, 12, 2)
-
-    base_v4_s = datetime(2020, 12, 3)
-    base_v4_e = datetime(2022, 7, 15)
-
-    base_ref = datetime(2010, 1, 1)
-    
-    date_list_v3 = [base_v3_s + timedelta(days=day) for day in range(365+365+142)]
-    date_list_v4 = [base_v4_s + timedelta(days=day) for day in range(365+180-151)]
-    
-    for i, name in enumerate(filenames):
-        
-        if 'v4' in name:
-            date_list = date_list_v4
-        else:
-            date_list = date_list_v3
-        
-        nums = re.findall(r'\d+', name)
-        indy = int(nums[-2])
-        indx = int(nums[-3])
-        day = int(nums[-4])
-        day = date_list[day]
-        month = day.month
-        
-        month_norm = (month - 1)/(12-1)
-        
-        lon = lon_80km[indx, indy]
-        lat = lat_80km[indx, indy]
-
-        lon = (lon - lon_minmax[0])/(lon_minmax[1] - lon_minmax[0])
-        lat = (lat - lat_minmax[0])/(lat_minmax[1] - lat_minmax[0])
-
-        elev = elev_80km[indx, indy]
-        elev = elev / elev_max
-        
-        lon_out.append(lon)
-        lat_out.append(lat)
-        elev_out.append(elev)
-        mon_out.append(month_norm)
-        
-    return np.array(lon_out), np.array(lat_out), np.array(elev_out), np.array(mon_out)
-
-def name_to_ind(filenames):
-    
-    indx_out = []
-    indy_out = []
-    day_out = []
-    flag_out = []
-    
-    for i, name in enumerate(filenames):
-        nums = re.findall(r'\d+', name)
-        indy = int(nums[-2])
-        indx = int(nums[-3])
-        day = int(nums[-4])
-        
-        indx_out.append(indx)
-        indy_out.append(indy)
-        day_out.append(day)
-        
-        if "pos" in name:
-            flag_out.append(True)
-        else:
-            flag_out.append(False)
-        
-    return np.array(indx_out), np.array(indy_out), np.array(day_out), np.array(flag_out)
-
-def feature_extract(filenames, lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max):
-    
-    lon_out = []
-    lat_out = []
-    elev_out = []
-    mon_out = []
-    
-    base_v3_s = datetime(2018, 7, 15)
-    base_v3_e = datetime(2020, 12, 2)
-
-    base_v4_s = datetime(2020, 12, 3)
-    base_v4_e = datetime(2022, 7, 15)
-
-    base_ref = datetime(2010, 1, 1)
-    
-    date_list_v3 = [base_v3_s + timedelta(days=day) for day in range(365+365+142)]
-    date_list_v4 = [base_v4_s + timedelta(days=day) for day in range(365+180-151)]
-    
-    for i, name in enumerate(filenames):
-        
-        if 'v4' in name:
-            date_list = date_list_v4
-        else:
-            date_list = date_list_v3
-        
-        nums = re.findall(r'\d+', name)
-        indy = int(nums[-2])
-        indx = int(nums[-3])
-        day = int(nums[-4])
-        day = date_list[day]
-        month = day.month
-        
-        month_norm = (month - 1)/(12-1)
-        
-        lon = lon_80km[indx, indy]
-        lat = lat_80km[indx, indy]
-
-        lon = (lon - lon_minmax[0])/(lon_minmax[1] - lon_minmax[0])
-        lat = (lat - lat_minmax[0])/(lat_minmax[1] - lat_minmax[0])
-
-        elev = elev_80km[indx, indy]
-        elev = elev / elev_max
-        
-        lon_out.append(lon)
-        lat_out.append(lat)
-        elev_out.append(elev)
-        mon_out.append(month_norm)
-        
-    return np.array(lon_out), np.array(lat_out), np.array(elev_out), np.array(mon_out)
-
-def name_to_ind(filenames):
-    
-    indx_out = []
-    indy_out = []
-    day_out = []
-    flag_out = []
-    
-    for i, name in enumerate(filenames):
-        nums = re.findall(r'\d+', name)
-        indy = int(nums[-2])
-        indx = int(nums[-3])
-        day = int(nums[-4])
-        
-        indx_out.append(indx)
-        indy_out.append(indy)
-        day_out.append(day)
-        
-        if "pos" in name:
-            flag_out.append(True)
-        else:
-            flag_out.append(False)
-        
-    return np.array(indx_out), np.array(indy_out), np.array(day_out), np.array(flag_out)
-
-def create_model():
-    
-    IN = keras.Input((L_vec, 128))
-    X = IN
-    X = keras.layers.Conv1D(128, kernel_size=2, strides=1, padding='valid')(X)
-    X = keras.layers.Activation("gelu")(X)
-    
-    #
-    IN_vec = keras.Input((2,))
-    
-    X = keras.layers.GlobalMaxPool1D()(X) #X = keras.layers.Flatten()(X)
-    X = keras.layers.Concatenate()([X, IN_vec])
-    
-    X = keras.layers.Dense(64)(X)
-    X = keras.layers.Activation("relu")(X)
-    X = keras.layers.BatchNormalization()(X)
-
-    OUT = X
-    OUT = keras.layers.Dense(1, activation='sigmoid', bias_initializer=keras.initializers.Constant(-10))(OUT)
-
-    model = keras.models.Model(inputs=[IN, IN_vec], outputs=OUT)
-    return model
 
 # ================================================================ #
 # Geographical information
@@ -260,38 +75,20 @@ lat_minmax = [np.min(lat_80km_mask), np.max(lat_80km_mask)]
 
 # ============================================================ #
 # File path
+path_name1_v3 = path_batch_v3
+path_name2_v3 = path_batch_v3
+path_name3_v3 = path_batch_v3
+path_name4_v3 = path_batch_v3
 
-filepath_vec = "/glade/work/ksha/NCAR/"
+path_name1_v4 = path_batch_v4x
+path_name2_v4 = path_batch_v4x
+path_name3_v4 = path_batch_v4x
+path_name4_v4 = path_batch_v4x
 
-if (lead1 < 9) or (lead1 > 18):
-    path_name1_v3 = '/glade/scratch/ksha/DATA/NCAR_batch_v3/'
-else:
-    path_name1_v3 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
-
-if (lead2 < 9) or (lead2 > 18):
-    path_name2_v3 = '/glade/scratch/ksha/DATA/NCAR_batch_v3/'
-else:
-    path_name2_v3 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
-    
-if (lead3 < 9) or (lead3 > 18):
-    path_name3_v3 = '/glade/scratch/ksha/DATA/NCAR_batch_v3/'
-else:
-    path_name3_v3 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
-    
-if (lead4 < 9) or (lead4 > 18):
-    path_name4_v3 = '/glade/scratch/ksha/DATA/NCAR_batch_v3/'
-else:
-    path_name4_v3 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
-
-path_name1_v4 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4x/'
-path_name2_v4 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4x/'
-path_name3_v4 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4x/'
-path_name4_v4 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4x/'
-
-path_name1_v4_test = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
-path_name2_v4_test = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
-path_name3_v4_test = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
-path_name4_v4_test = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
+path_name1_v4_test = path_batch_v4
+path_name2_v4_test = path_batch_v4
+path_name3_v4_test = path_batch_v4
+path_name4_v4_test = path_batch_v4
 
 # ========================================================================= #
 # Read batch file names (npy)
@@ -442,8 +239,8 @@ for i in range(L):
 # ================================================================== #
 # extract location information for nearby-grid-cell-based training
 
-indx_train, indy_train, days_train, flags_train = name_to_ind(filename_train3_pick_v3)
-indx_valid, indy_valid, days_valid, flags_valid = name_to_ind(filename_valid3_pick_v3)
+indx_train, indy_train, days_train, flags_train = mu.name_to_ind(filename_train3_pick_v3)
+indx_valid, indy_valid, days_valid, flags_valid = mu.name_to_ind(filename_valid3_pick_v3)
 grid_shape = lon_80km.shape
 
 # ============================================= #
@@ -496,26 +293,20 @@ TRAIN_neg_indx = indx[TRAIN_Y==0]
 TRAIN_neg_indy = indy[TRAIN_Y==0]
 TRAIN_neg_days = days[TRAIN_Y==0]
 
-lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = feature_extract(filename_train3_pick_v3, 
-                                                                      lon_80km, lon_minmax, 
-                                                                      lat_80km, lat_minmax, elev_80km, elev_max)
+lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = mu.feature_extract(filename_train3_pick_v3, 
+                                                 lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max)
 
-TRAIN_stn_v3 = np.concatenate((lon_norm_v3[:, None], 
-                               lat_norm_v3[:, None]), axis=1)
+TRAIN_stn_v3 = np.concatenate((lon_norm_v3[:, None], lat_norm_v3[:, None]), axis=1)
 
+lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = mu.feature_extract(filename_valid3_pick_v3, 
+                                                 lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max)
 
-lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = feature_extract(filename_valid3_pick_v3, 
-                                                                      lon_80km, lon_minmax, 
-                                                                      lat_80km, lat_minmax, elev_80km, elev_max)
-
-VALID_stn_v3 = np.concatenate((lon_norm_v3[:, None], 
-                               lat_norm_v3[:, None]), axis=1)
+VALID_stn_v3 = np.concatenate((lon_norm_v3[:, None], lat_norm_v3[:, None]), axis=1)
 
 ALL_stn = np.concatenate((TRAIN_stn_v3, VALID_stn_v3))
 
 TRAIN_stn_pos = ALL_stn[TRAIN_Y==1]
 TRAIN_stn_neg = ALL_stn[TRAIN_Y==0]
-
 
 # ====================================================== #
 # HRRR v4x validation set
@@ -593,14 +384,12 @@ for i in range(L):
 
 # ================================================================== #
 # extract location information
-indx, indy, days, flags = name_to_ind(filename_valid3_pick)
+indx, indy, days, flags = mu.name_to_ind(filename_valid3_pick)
 
-lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = feature_extract(filename_valid3_pick, 
-                                                                      lon_80km, lon_minmax, 
-                                                                      lat_80km, lat_minmax, elev_80km, elev_max)
+lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = mu.feature_extract(filename_valid3_pick, 
+                                                 lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max)
 
-VALID_stn_v3 = np.concatenate((lon_norm_v3[:, None], 
-                               lat_norm_v3[:, None]), axis=1)
+VALID_stn_v3 = np.concatenate((lon_norm_v3[:, None], lat_norm_v3[:, None]), axis=1)
 
 # ================================================================== #
 # Collect feature vectors from all batch files
@@ -731,12 +520,12 @@ for r in range(training_rounds):
     else:
         tol = -200
 
-    model = create_model()
+    model = mu.create_classif_head()
     
     model.compile(loss=keras.losses.BinaryCrossentropy(from_logits=False),
                   optimizer=keras.optimizers.Adam(lr=1e-4))
     
-    set_seeds(int(seeds[r]))
+    mu.set_seeds(int(seeds[r]))
     print('Training round {}'.format(r))
 
     
@@ -843,7 +632,7 @@ for r in range(training_rounds):
         Y_pred[Y_pred<0] = 0
         Y_pred[Y_pred>1] = 1
 
-        record_temp = verif_metric(VALID_Y, Y_pred, ref)
+        record_temp = mu.verif_metric(VALID_Y, Y_pred, ref)
 
         # if i % 10 == 0:
         #     model.save(model_path_backup)
@@ -874,7 +663,7 @@ for r in range(training_rounds):
 # ================================================================================ #
 # Inference
     
-model = create_model()
+model = mu.create_classif_head()
 
 model.compile(loss=keras.losses.BinaryCrossentropy(from_logits=False),
               optimizer=keras.optimizers.Adam(lr=0))

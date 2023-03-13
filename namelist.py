@@ -6,6 +6,16 @@ report_dir = data_dir+'storm_report/'
 NCAR500_dir = '/glade/p/mmm/parc/sobash/NSC/3KM_WRF_POST_12sec_ts/'
 #'/glade/work/sobash/NSC_objects/HRRR_new' 
 #'/glade/u/home/sobash/2013RT/REPORTS/reports_v20221101.db'
+
+# File path
+filepath_vec = "/glade/work/ksha/NCAR/"
+# HRRR v3
+path_batch_v3 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v3/'
+# HRRR v4x
+path_batch_v4x = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4x/'
+# HRRR v4
+path_batch_v4 = '/glade/campaign/cisl/aiml/ksha/NCAR_batch_v4_temp/'
+
 HRRR_dir = '/glade/scratch/ksha/DRIVE/HRRR/'
 save_dir = '/glade/work/ksha/NCAR/'
 save_dir_scratch = '/glade/scratch/ksha/DRIVE/'
@@ -22,7 +32,7 @@ fig_keys = {'dpi':250,
             'orientation':'portrait', 
             'bbox_inches':'tight', 
             'pad_inches':0.1, 
-            'transparent':False}#            'papertype':'a4',
+            'transparent':False}
 
 # colors
 #
