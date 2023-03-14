@@ -63,7 +63,7 @@ def dummy_loader(model_path):
     W = backbone.get_weights()
     return W
     
-def create_model_base(input_shape=(64, 64, 15), depths=[3, 3, 27, 3], projection_dims=[32, 32, 64, 64], first_pool=4):
+def create_model_base(input_shape=(64, 64, 15), depths=[3, 3, 27, 3], projection_dims=[32, 64, 96, 128], first_pool=4):
 
     
     drop_path_rate=0.0

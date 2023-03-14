@@ -40,44 +40,7 @@ lead = int(args['lead'])
 model_name = args['model']
 prefix = args['prefix']
 ver = args['ver']
-
-class LayerScale(layers.Layer):
-    """Layer scale module.
-    References:
-      - https://arxiv.org/abs/2103.17239
-    Args:
-      init_values (float): Initial value for layer scale. Should be within
-        [0, 1].
-      projection_dim (int): Projection dimensionality.
-    Returns:
-      Tensor multiplied to the scale.
-    """
-
-    def __init__(self, init_values, projection_dim, **kwargs):
-        super().__init__(**kwargs)
-        self.init_values = init_values
-        self.projection_dim = projection_dim
-
-    def build(self, input_shape):
-        self.gamma = tf.Variable(
-            self.init_values * tf.ones((self.projection_dim,))
-        )
-
-    def call(self, x):
-        return x * self.gamma
-
-    def get_config(self):
-        config = super().get_config()
-        config.update(
-            {
-                "init_values": self.init_values,
-                "projection_dim": self.projection_dim,
-            }
-        )
-        return config
-
-ind_pick_from_batch = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-L_vars = len(ind_pick_from_batch)
+N_vars = L_vars = 15
 
 # Collection batch names from scratch and campaign
 names = glob("/glade/scratch/ksha/DATA/NCAR_batch_{}/VALID*lead{}.npy".format(ver, lead)) + glob("/glade/campaign/cisl/aiml/ksha/NCAR_batch_{}/VALID*lead{}.npy".format(ver, lead))
@@ -104,107 +67,10 @@ for i, name in enumerate(filename_valid):
         else:
             TEST_target[i] = 0.0
 
-# model definition
-def create_model(input_shape=(64, 64, 15)):
-
-    depths=[3, 3, 27, 3]
-    projection_dims=[32, 64, 96, 128]
-    drop_path_rate=0.0
-    layer_scale_init_value=1e-6
-
-
-    model_name='Branch64X'
-    IN64 = layers.Input(shape=input_shape)
-    X = IN64
-
-
-    # ----- convnext block 0 ----- #
-
-    X = layers.Conv2D(projection_dims[0], kernel_size=4, strides=4, name="{}_down0".format(model_name))(X)
-    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_norm".format(model_name))(X)
-
-    for j in range(depths[0]):
-
-        X_convnext = X
-        X_convnext = layers.Conv2D(filters=projection_dims[0], kernel_size=7, padding="same",
-                                   groups=projection_dims[0], name="{}_down0_dconv{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down0_dconv{}_norm".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(4 * projection_dims[0], name="{}_down0_dense{}_p1".format(model_name, j))(X_convnext)
-        X_convnext = layers.Activation("gelu", name="{}_down0_gelu{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(projection_dims[0], name="{}_down0_dense{}_p2".format(model_name, j))(X_convnext)
-
-        X_convnext = LayerScale(layer_scale_init_value, projection_dims[0], name="{}_down0_layerscale{}".format(model_name, j))(X_convnext)
-
-        X = X + X_convnext
-
-
-    # ----- convnext block 1 ----- #
-
-    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_norm".format(model_name))(X)
-    X = layers.Conv2D(projection_dims[1], kernel_size=2, strides=2, name="{}_down1".format(model_name))(X)
-
-    for j in range(depths[1]):
-
-        X_convnext = X
-        X_convnext = layers.Conv2D(filters=projection_dims[1], kernel_size=7, padding="same",
-                                   groups=projection_dims[1], name="{}_down1_dconv{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down1_dconv{}_norm".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(4 * projection_dims[1], name="{}_down1_dense{}_p1".format(model_name, j))(X_convnext)
-        X_convnext = layers.Activation("gelu", name="{}_down1_gelu{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(projection_dims[1], name="{}_down1_dense{}_p2".format(model_name, j))(X_convnext)
-
-        X_convnext = LayerScale(layer_scale_init_value, projection_dims[1], name="{}_down1_layerscale{}".format(model_name, j))(X_convnext)
-
-        X = X + X_convnext
-
-    # ----- convnext block 2 ----- #
-
-    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_norm".format(model_name))(X)
-    X = layers.Conv2D(projection_dims[2], kernel_size=2, strides=2, name="{}_down2".format(model_name))(X)
-
-    for j in range(depths[2]):
-
-        X_convnext = X
-        X_convnext = layers.Conv2D(filters=projection_dims[2], kernel_size=5, padding="same",
-                                   groups=projection_dims[2], name="{}_down2_dconv{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down2_dconv{}_norm".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(4 * projection_dims[2], name="{}_down2_dense{}_p1".format(model_name, j))(X_convnext)
-        X_convnext = layers.Activation("gelu", name="{}_down2_gelu{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(projection_dims[2], name="{}_down2_dense{}_p2".format(model_name, j))(X_convnext)
-
-        X_convnext = LayerScale(layer_scale_init_value, projection_dims[2], name="{}_down2_layerscale{}".format(model_name, j))(X_convnext)
-
-        X = X + X_convnext
-
-    # ----- convnext block 3 ----- #
-
-    X = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_norm".format(model_name))(X)
-    X = layers.Conv2D(projection_dims[3], kernel_size=2, padding='same', name="{}_down3".format(model_name))(X)
-
-    for j in range(depths[3]):
-
-        X_convnext = X
-        X_convnext = layers.Conv2D(filters=projection_dims[3], kernel_size=5, padding="same",
-                                   groups=projection_dims[3], name="{}_down3_dconv{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.LayerNormalization(epsilon=1e-6, name="{}_down3_dconv{}_norm".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(4 * projection_dims[3], name="{}_down3_dense{}_p1".format(model_name, j))(X_convnext)
-        X_convnext = layers.Activation("gelu", name="{}_down3_gelu{}".format(model_name, j))(X_convnext)
-        X_convnext = layers.Dense(projection_dims[3], name="{}_down3_dense{}_p2".format(model_name, j))(X_convnext)
-
-        X_convnext = LayerScale(layer_scale_init_value, projection_dims[3], name="{}_down3_layerscale{}".format(model_name, j))(X_convnext)
-
-        X = X + X_convnext
-        
-    V1 = X
-
-    OUT1 = layers.GlobalMaxPooling2D(name="{}_head_pool64".format(model_name))(V1)
-    model = Model(inputs=IN64, outputs=OUT1, name=model_name)
-
-    return model
 
 
 # Crerate model
-model = create_model(input_shape=(64, 64, 15))
+model = mu.create_model_base(input_shape=(64, 64, 15), depths=[3, 3, 27, 3], projection_dims=[32, 64, 96, 128], first_pool=4)
 
 # get current weights
 W_new = model.get_weights()
@@ -225,7 +91,7 @@ for i in range(len(W_new)):
 model.set_weights(W_new)
 
 # compile just in case
-model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
+# model.compile(loss=keras.losses.mean_absolute_error, optimizer=keras.optimizers.SGD(lr=0))
 
 # predict feature vectors
 Y_vector = model.predict([TEST_input_64,])
