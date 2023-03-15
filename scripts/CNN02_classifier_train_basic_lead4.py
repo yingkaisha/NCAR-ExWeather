@@ -404,7 +404,157 @@ for i in range(len(indx)):
 # TRAIN_pos_x & TRAIN_stn_neg & TRAIN_stn_pos & TRAIN_stn_neg
 #VALID_VEC & VALID_Y & VALID_stn_v3
 
+# ============================================================================== #
+# Set randmo seeds
 
+seeds = [12342, 2536234, 98765, 473, 865, 7456, 69472, 3456357, 3425, 678,
+         2452624, 5787, 235362, 67896, 98454, 12445, 46767, 78906, 345, 8695, 
+         2463725, 4734, 23234, 884, 2341, 362, 5, 234, 483, 785356, 23425, 3621, 
+         58461, 80968765, 123, 425633, 5646, 67635, 76785, 34214, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 
+training_rounds = len(seeds)
 
+# ============================================== #
+ref = np.sum(VALID_Y) / len(VALID_Y)
+grid_shape = lon_80km.shape
+
+batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
+temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
+
+key = '{}_lead{}'.format(model_tag, lead_name)
+
+model_name = '{}'.format(key)
+model_path = temp_dir+model_name
+
+tol = 0
+
+# ========== Training loop ========== #
+L_pos = len(TRAIN_stn_pos)
+L_neg = len(TRAIN_stn_neg)
+# =========== Model Section ========== #
+
+batch_dir = '/glade/scratch/ksha/DATA/NCAR_batch/'
+temp_dir = '/glade/work/ksha/NCAR/Keras_models/'
+
+key = '{}_lead{}'.format(model_tag, lead_name)
+
+model_name = '{}'.format(key)
+model_path = temp_dir+model_name
+
+tol = 0
+
+# ========== Training loop ========== #
+record = 1.1
+print("Initial record: {}".format(record))
+
+min_del = 0
+max_tol = 100 # early stopping with patience
+
+epochs = 500
+batch_size = 64
+L_train = 16
+
+for r in range(training_rounds):
+    if r == 0:
+        tol = 0
+    else:
+        tol = -200
+
+    model = mu.create_classif_head()
+    
+    model.compile(loss=keras.losses.BinaryCrossentropy(from_logits=False),
+                  optimizer=keras.optimizers.Adam(lr=1e-4))
+    
+    set_seeds(int(seeds[r]))
+    print('Training round {}'.format(r))
+
+    for i in range(epochs):            
+        start_time = time.time()
+
+        # loop of batch
+        for j in range(L_train):
+            N_pos = 32
+            N_neg = batch_size - N_pos
+
+            ind_neg = du.shuffle_ind(L_neg)
+            ind_pos = du.shuffle_ind(L_pos)
+
+            ind_neg_pick = ind_neg[:N_neg]
+            ind_pos_pick = ind_pos[:N_pos]
+
+            X_batch_neg = TRAIN_neg_x[ind_neg_pick, :]
+            X_batch_pos = TRAIN_pos_x[ind_pos_pick, :]
+            
+            X_batch_stn_neg = TRAIN_stn_neg[ind_neg_pick, :]
+            X_batch_stn_pos = TRAIN_stn_pos[ind_pos_pick, :]
+
+            X_batch = np.concatenate((X_batch_neg, X_batch_pos), axis=0)
+            X_batch_stn = np.concatenate((X_batch_stn_neg, X_batch_stn_pos), axis=0)
+
+            Y_batch = np.ones([batch_size,])
+            Y_batch[:N_neg] = 0.0
+
+            ind_ = du.shuffle_ind(batch_size)
+
+            X_batch = X_batch[ind_, :]
+            X_batch_stn = X_batch_stn[ind_, :]
+            Y_batch = Y_batch[ind_]
+
+            # train on batch
+            model.train_on_batch([X_batch, X_batch_stn], Y_batch);
+
+        # epoch end operations
+        Y_pred = model.predict([VALID_VEC, VALID_stn_v3])
+
+        Y_pred[Y_pred<0] = 0
+        Y_pred[Y_pred>1] = 1
+
+        record_temp = verif_metric(VALID_Y, Y_pred, ref)
+
+        # if i % 10 == 0:
+        #     model.save(model_path_backup)
+
+        if (record - record_temp > min_del):
+            print('Validation loss improved from {} to {}'.format(record, record_temp))
+            record = record_temp
+            tol = 0
+            
+            #print('tol: {}'.format(tol))
+            # save
+            print('save to: {}'.format(model_path))
+            model.save(model_path)
+        else:
+            print('Validation loss {} NOT improved'.format(record_temp))
+            if record_temp > 1.0:
+                print('Early stopping')
+                break;
+            else:
+                tol += 1
+                if tol >= max_tol:
+                    print('Early stopping')
+                    break;
+                else:
+                    continue;
+        print("--- %s seconds ---" % (time.time() - start_time))
+
+# ================================================================================ #
+# Inference
+    
+model = mu.create_classif_head()
+
+model.compile(loss=keras.losses.BinaryCrossentropy(from_logits=False),
+              optimizer=keras.optimizers.Adam(lr=0))
+
+W_old = k_utils.dummy_loader('/glade/work/ksha/NCAR/Keras_models/{}_lead{}'.format(model_tag, lead_name))
+model.set_weights(W_old)
+        
+Y_pred_valid = model.predict([VALID_Input, VALID_Input_stn])
+
+# Save results
+save_dict = {}
+save_dict['Y_pred_valid'] = Y_pred_valid
+save_dict['VALID_Y'] = VALID_Y
+
+np.save('{}RESULT_lead{}_{}.npy'.format(filepath_vec, lead_name, model_tag), save_dict)
+print('{}RESULT_lead{}_{}.npy'.format(filepath_vec, lead_name, model_tag))
 

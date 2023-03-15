@@ -1,3 +1,7 @@
+'''
+Classifier head training with Conv1D and feature vectors on a single location and four forecast lead times. 
+'''
+
 # general tools
 import os
 import re
