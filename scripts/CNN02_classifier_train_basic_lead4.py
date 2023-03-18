@@ -1,3 +1,9 @@
+'''
+Train classifier head with size-128 feature vectors on a 64-by-64 grid cell
+Nearby grid cells are not considered
+Revamped
+'''
+
 # general tools
 import os
 import re
@@ -200,7 +206,7 @@ for i in range(L):
     TRAIN_X_lead4[i, :] = TRAIN_lead4_v3[ind_lead4_v3, :]
     
     TRAIN_Y_v3[i] = TRAIN_lead3_y_v3[ind_lead3_v3]
-    
+
 # ================================================================== #
 # Collect feature vectors from all batch files (HRRR v3, validation)
 L = len(VALID_ind2_v3)
@@ -235,47 +241,19 @@ for i in range(L):
     VALID_X_lead4[i, :] = VALID_lead4_v3[ind_lead4_v3, :]
     
     VALID_Y_v3[i] = VALID_lead3_y_v3[ind_lead3_v3]
-
-# ================================================================== #
-# extract location information for nearby-grid-cell-based training
-
-indx_train, indy_train, days_train, flags_train = mu.name_to_ind(filename_train3_pick_v3)
-indx_valid, indy_valid, days_valid, flags_valid = mu.name_to_ind(filename_valid3_pick_v3)
-grid_shape = lon_80km.shape
-
-# ============================================= #
-# Merge feature vectors on multiple lead times
-
-N_days_train = np.max(days_train) + 1
-N_days_valid = (np.max(days_valid) - np.min(days_valid) + 1) + 1
-
-ALL_VEC = np.empty((N_days_train+N_days_valid, 4,)+grid_shape+(128,))
-ALL_VEC[...] = np.nan
-
-for i in range(len(indx_train)):
-    indx_temp = indx_train[i]
-    indy_temp = indy_train[i]
-    days_temp = days_train[i]
     
-    ALL_VEC[days_temp, 0, indx_temp, indy_temp, :] = TRAIN_X_lead1[i, :]
-    ALL_VEC[days_temp, 1, indx_temp, indy_temp, :] = TRAIN_X_lead2[i, :]
-    ALL_VEC[days_temp, 2, indx_temp, indy_temp, :] = TRAIN_X_lead3[i, :]
-    ALL_VEC[days_temp, 3, indx_temp, indy_temp, :] = TRAIN_X_lead4[i, :]
+ALL_TRAIN = np.concatenate((TRAIN_X_lead1[:, None, :], TRAIN_X_lead2[:, None, :],
+                            TRAIN_X_lead3[:, None, :], TRAIN_X_lead4[:, None, :]), axis=1)
 
-for i in range(len(indx_valid)):
-    indx_temp = indx_valid[i]
-    indy_temp = indy_valid[i]
-    days_temp = days_valid[i]
-    
-    ALL_VEC[days_temp, 0, indx_temp, indy_temp, :] = VALID_X_lead1[i, :]
-    ALL_VEC[days_temp, 1, indx_temp, indy_temp, :] = VALID_X_lead2[i, :]
-    ALL_VEC[days_temp, 2, indx_temp, indy_temp, :] = VALID_X_lead3[i, :]
-    ALL_VEC[days_temp, 3, indx_temp, indy_temp, :] = VALID_X_lead4[i, :]
-    
-# ======================================================== #
-# Separate pos and neg samples for balanced training
+ALL_VALID = np.concatenate((VALID_X_lead1[:, None, :], VALID_X_lead2[:, None, :],
+                            VALID_X_lead3[:, None, :], VALID_X_lead4[:, None, :]), axis=1)
+
+ALL_VEC = np.concatenate((ALL_TRAIN, ALL_VALID), axis=0)
 
 TRAIN_Y = np.concatenate((TRAIN_Y_v3, VALID_Y_v3), axis=0)
+
+# ======================================================== #
+# Separate pos and neg samples for balanced training
 
 TRAIN_pos_x = ALL_VEC[TRAIN_Y==1]
 TRAIN_neg_x = ALL_VEC[TRAIN_Y==0]
@@ -294,7 +272,6 @@ ALL_stn = np.concatenate((TRAIN_stn_v3, VALID_stn_v3))
 
 TRAIN_stn_pos = ALL_stn[TRAIN_Y==1]
 TRAIN_stn_neg = ALL_stn[TRAIN_Y==0]
-
 
 # ====================================================== #
 # HRRR v4x validation set
@@ -369,40 +346,17 @@ for i in range(L):
     VALID_X_lead4[i, :] = VALID_lead4[ind_lead4, :]
     
     VALID_Y[i] = VALID_lead3_y[ind_lead3]
+    
+VALID_VEC = np.concatenate((VALID_X_lead1[:, None, :], VALID_X_lead2[:, None, :],
+                            VALID_X_lead3[:, None, :], VALID_X_lead4[:, None, :]), axis=1)
 
 # ================================================================== #
 # extract location information
-indx, indy, days, flags = mu.name_to_ind(filename_valid3_pick)
 
 lon_norm_v3, lat_norm_v3, elev_norm_v3, mon_norm_v3 = mu.feature_extract(filename_valid3_pick, 
                                                  lon_80km, lon_minmax, lat_80km, lat_minmax, elev_80km, elev_max)
 
 VALID_stn_v3 = np.concatenate((lon_norm_v3[:, None], lat_norm_v3[:, None]), axis=1)
-
-# ================================================================== #
-# Collect feature vectors from all batch files
-
-grid_shape = lon_80km.shape
-N_days = np.max(days)-np.min(days)+1
-
-VALID_VEC = np.empty((N_days, 4,)+grid_shape+(128,))
-VALID_VEC[...] = np.nan
-
-for i in range(len(indx)):
-    indx_temp = indx[i]
-    indy_temp = indy[i]
-    days_temp = days[i]-np.min(days)
-    
-    if days_temp <0:
-        eqrgetwqh
-    
-    VALID_VEC[days_temp, 0, indx_temp, indy_temp, :] = VALID_X_lead1[i, :]
-    VALID_VEC[days_temp, 1, indx_temp, indy_temp, :] = VALID_X_lead2[i, :]
-    VALID_VEC[days_temp, 2, indx_temp, indy_temp, :] = VALID_X_lead3[i, :]
-    VALID_VEC[days_temp, 3, indx_temp, indy_temp, :] = VALID_X_lead4[i, :]
-
-# TRAIN_pos_x & TRAIN_stn_neg & TRAIN_stn_pos & TRAIN_stn_neg
-#VALID_VEC & VALID_Y & VALID_stn_v3
 
 # ============================================================================== #
 # Set randmo seeds
@@ -536,7 +490,7 @@ for r in range(training_rounds):
                 else:
                     continue;
         print("--- %s seconds ---" % (time.time() - start_time))
-
+        
 # ================================================================================ #
 # Inference
     
@@ -557,4 +511,5 @@ save_dict['VALID_Y'] = VALID_Y
 
 np.save('{}RESULT_lead{}_{}.npy'.format(filepath_vec, lead_name, model_tag), save_dict)
 print('{}RESULT_lead{}_{}.npy'.format(filepath_vec, lead_name, model_tag))
+
 
