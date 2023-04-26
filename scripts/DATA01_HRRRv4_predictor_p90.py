@@ -1,3 +1,4 @@
+import os
 import sys
 from glob import glob
 
@@ -44,9 +45,9 @@ ind_pick = [0, 1, 3, 4, 8, 9, 10, 13, 14, 15, 16, 17, 18, 21, 22]
 log_norm = [True, False, True, True, True, True, True, True, True, False, False, 
             False, False, True, True, True, True, False, False, False, False, False, False]
 
-# HRRRv4_lead_p0 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
-# HRRRv4_lead_p1 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
-# HRRRv4_lead_p2 = zarr.load(save_dir_scratch+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
+# HRRRv4_lead_p0 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
+# HRRRv4_lead_p1 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
+# HRRRv4_lead_p2 = zarr.load(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[2]))[:365, ...]
 
 HRRRv4_lead_p0 = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[0]))[:365, ...]
 HRRRv4_lead_p1 = da.from_zarr(save_dir_campaign+'HRRR_{:02}_v4.zarr'.format(leads[1]))[:365, ...]
@@ -75,63 +76,65 @@ for ix in range(shape_80km[0]):
         indx = int(indx_array[ix, iy])
         indy = int(indy_array[ix, iy])
         
-        x_edge_left = indx - half_margin
-        x_edge_right = indx + half_margin
+        x_edge_left_ = indx - half_margin
+        x_edge_right_ = indx + half_margin
 
-        y_edge_bottom = indy - half_margin
-        y_edge_top = indy + half_margin
+        y_edge_bottom_ = indy - half_margin
+        y_edge_top_ = indy + half_margin
         
-        # indices must be valid
-        if x_edge_left >= 0 and y_edge_bottom >= 0 and x_edge_right < shape_3km[0] and y_edge_top < shape_3km[1]:
-            # indices must link to land grid cells
-            if land_mask_3km[x_edge_left, y_edge_bottom] and land_mask_3km[x_edge_left, y_edge_top]:
-                if land_mask_3km[x_edge_right, y_edge_bottom] and land_mask_3km[x_edge_right, y_edge_top]:
-                    
-                    # start_time = time.time()
-                    
-                    p0 = np.array(HRRRv4_lead_p0[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
-                    p1 = np.array(HRRRv4_lead_p1[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
-                    p2 = np.array(HRRRv4_lead_p2[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
-                    
-                    stats_var = np.empty((len(ind_pick), 4))
-                    stats_var[...] = np.nan
-                    
-                    for v, ind_var in enumerate(ind_pick):
-                    
-                        p_all = np.concatenate((p0[..., ind_var].ravel(), p1[..., ind_var].ravel(), p2[..., ind_var].ravel()))
-                        p_all = p_all[~np.isnan(p_all)]
+        # # indices must be valid
+        x_edge_left = np.max([x_edge_left_, 0])
+        y_edge_bottom = np.max([y_edge_bottom_, 0])
+        x_edge_right = np.min([x_edge_right_, shape_3km[0]])
+        y_edge_top = np.min([y_edge_top_, shape_3km[1]])
 
-                        if ind_var == 0:
-                            p_all[p_all<0] = 0
+        if land_mask_80km[ix, iy]:
+            save_name = '/glade/work/ksha/NCAR/p90_v4_80km_ix{}_iy{}_lead{}{}{}.npy'.format(ix, iy, leads[0], leads[1], leads[2])
+            # ------ only for re-run ----- #
+            if os.path.isfile(save_name):
+                print('{} Exists'.format(save_name))
+            else:
+                p0 = np.array(HRRRv4_lead_p0[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
+                p1 = np.array(HRRRv4_lead_p1[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
+                p2 = np.array(HRRRv4_lead_p2[:, x_edge_left:x_edge_right, y_edge_bottom:y_edge_top, :])
 
-                        if ind_var == 16:
-                            p_all = -1*p_all
-                            p_all[p_all<0] = 0
-                        
-                        p_all = p_all[~np.isnan(p_all)]
-                        
-                        if log_norm[ind_var]:
-                            
-                            if np.sum(np.isnan(p_all))>0:
-                                waerg
-                            if np.min(p_all)<0:
-                                wqerga
-                                
-                            temp = np.log(p_all+1)
-                            stats_var[v, 0] = np.quantile(temp, 0.90)
-                            stats_var[v, 1] = np.quantile(temp, 0.95)
-                            stats_var[v, 2] = np.quantile(temp, 0.99)
-                            stats_var[v, 3] = np.max(temp)
-                            
-                        else:
-                            stats_var[v, 0] = np.quantile(temp, 0.90)
-                            stats_var[v, 1] = np.quantile(temp, 0.95)
-                            stats_var[v, 2] = np.quantile(temp, 0.99)
-                            stats_var[v, 3] = np.max(temp)
-                            
-                    # print("--- %s seconds ---" % (time.time() - start_time))
-                    save_name = '/glade/work/ksha/NCAR/p90_v4_80km_ix{}_iy{}_lead{}{}{}.npy'.format(ix, iy,
-                                                                                                    leads[0], leads[1], leads[2])
-                    np.save(save_name, stats_var)
-                    print(save_name)
+                stats_var = np.empty((len(ind_pick), 4))
+                stats_var[...] = np.nan
+
+                for v, ind_var in enumerate(ind_pick):
+
+                    p_all = np.concatenate((p0[..., ind_var].ravel(), p1[..., ind_var].ravel(), p2[..., ind_var].ravel()))
+                    p_all = p_all[~np.isnan(p_all)]
+
+                    if ind_var == 0:
+                        p_all[p_all<0] = 0
+
+                    if ind_var == 16:
+                        p_all = -1*p_all
+                        p_all[p_all<0] = 0
+
+                    p_all = p_all[~np.isnan(p_all)]
+
+                    if log_norm[ind_var]:
+
+                        if np.sum(np.isnan(p_all))>0:
+                            waerg
+                        if np.min(p_all)<0:
+                            wqerga
+
+                        temp = np.log(p_all+1)
+                        stats_var[v, 0] = np.quantile(temp, 0.90)
+                        stats_var[v, 1] = np.quantile(temp, 0.95)
+                        stats_var[v, 2] = np.quantile(temp, 0.99)
+                        stats_var[v, 3] = np.max(temp)
+
+                    else:
+                        stats_var[v, 0] = np.quantile(temp, 0.90)
+                        stats_var[v, 1] = np.quantile(temp, 0.95)
+                        stats_var[v, 2] = np.quantile(temp, 0.99)
+                        stats_var[v, 3] = np.max(temp)
+
+                # print("--- %s seconds ---" % (time.time() - start_time))
+                np.save(save_name, stats_var)
+                print(save_name)
                     
